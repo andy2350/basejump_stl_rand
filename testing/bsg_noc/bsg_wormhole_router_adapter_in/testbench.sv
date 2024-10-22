@@ -23,8 +23,8 @@ module testbench();
   logic reset;
   bsg_nonsynth_reset_gen #(
     .num_clocks_p(1)
-    ,.reset_cycles_lo_p(4)
-    ,.reset_cycles_hi_p(4)
+    ,.reset_cycles_lo_p(1)
+    ,.reset_cycles_hi_p(5)
   ) reset_gen (
     .clk_i(clk)
     ,.async_reset_o(reset)
@@ -112,11 +112,33 @@ module testbench();
     ,.data_o(rom_data)
   );
 
+  // Randomization logic
   initial begin
+    // Apply random reset delay
+    #($urandom_range(10, 100));
+    
+    // Randomize initial values
+    data_li = $urandom;
+    v_li = 1'b0;
+    
+    wait(!reset); // Wait until reset is deasserted
+    
+    // Generate random inputs at random intervals
+    fork
+      begin
+        repeat (100) begin
+          @(posedge clk);
+          // Randomize inputs
+          data_li = $urandom;
+          v_li = $urandom_range(0, 1); // Random valid signal
+          
+          // Random delay between packets
+          #(10 + $urandom_range(1, 10));
+        end
+      end
+    join
+
     wait(done);
-    //for (integer i =0; i < 1000; i++) begin
-    //  @(posedge clk);
-    //end
     $finish;
   end 
 
