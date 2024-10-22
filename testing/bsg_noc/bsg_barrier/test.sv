@@ -1,4 +1,15 @@
 /*verilator coverage_off*/
+
+class item;
+  rand logic res;
+
+
+  constraint res_con{
+      res inside {0,1};
+  }
+
+endclass
+
 module test;
   
   genvar i;
@@ -77,15 +88,17 @@ module test;
   
     end
   
+  item it;
+  int v;
   initial 
     begin
-      reset_li = 0;
-      #10
-      reset_li = 1;
-      #10 
-      reset_li = 0;
-      #200
-      #200
+      repeat(10) begin
+        #10
+        it = new();
+        v = it.randomize();
+        if (v != 1) $stop;
+        reset_li = it.res;
+      end
       $finish();
     end
   
