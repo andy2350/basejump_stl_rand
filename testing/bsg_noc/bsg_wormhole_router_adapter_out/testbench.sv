@@ -1,3 +1,4 @@
+/*verilator coverage_off*/
 module testbench();
  
   parameter x_cord_width_p=2;

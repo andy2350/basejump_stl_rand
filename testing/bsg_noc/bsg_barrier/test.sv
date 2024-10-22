@@ -1,3 +1,4 @@
+/*verilator coverage_off*/
 module test;
   
   genvar i;

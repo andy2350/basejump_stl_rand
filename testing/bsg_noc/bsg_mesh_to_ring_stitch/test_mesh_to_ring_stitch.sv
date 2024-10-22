@@ -1,3 +1,4 @@
+/*verilator coverage_off*/
 // this test was yanked from another file and may require
 // a few syntax error fixes.
 //

@@ -1,3 +1,4 @@
+/*verilator coverage_off*/
 `define DATA_WIDTH_P 4
 `define MESH_EDGE_P  2 // tests a 2^(MESH_EDGE_P) x 2^(MESH_EDGE_P) mesh network
 

@@ -1,4 +1,4 @@
-
+/*verilator coverage_off*/
 //
 // Paul Gao 06/2019
 //

@@ -1,12 +1,10 @@
 ## To be included in other makefiles, pass arguments via
 ## setting scan_params and set files by setting BSG_*_FILES
 
+export TOP = $(abspath ../../..)
+
 ## Environment Setup
 
-TOP ?= $(shell git rev-parse --show-toplevel)
-BSG_CADENV_DIR ?= $(TOP)/../bsg_cadenv
-
--include $(BSG_CADENV_DIR)/cadenv.mk
 
 SIMULATOR ?= vcs
 
@@ -30,7 +28,7 @@ BSG_IP_CORES_ELAB = xelab -debug typical -s top_sim -timescale=1ps/1ps
 BSG_IP_CORES_SIM  = xsim --runall top_sim
 
 BSG_IP_CORES_SIM_DEFINE_PARAM = -d@
-BSG_IP_CORES_SIM_INCLUDE_DIRS = -i $(TOP)/bsg_test -i $(TOP)/bsg_misc -i $(TOP)/bsg_dataflow
+BSG_IP_CORES_SIM_INCLUDE_DIRS = -I$(TOP)/bsg_test -I$(TOP)/bsg_misc -I$(TOP)/bsg_dataflow -I$(TOP)/bsg_tag
 BSG_IP_CORES_SIM_CLEAN_FILES = xvlog* xelab* webtalk* xsim* *.wdb .Xil *.vpd csrc/ simv.daidir/ ucli.key
 #
 ##########
@@ -46,8 +44,9 @@ ALL_FILES = $(foreach x,$(BSG_MISC_FILES),$(TOP)/bsg_misc/$(x))     \
               $(foreach x,$(BSG_DATAFLOW_FILES),$(TOP)/bsg_dataflow/$(x))   \
               $(foreach x,$(ADDITIONAL_FILES),./$(x))                       \
               $(foreach x,$(BSG_TEST_FILES),$(TOP)/bsg_test/$(x))           \
+              $(foreach x,$(BSG_TAG_FILES),$(TOP)/bsg_tag/$(x))           \
               $(foreach x,$(BSG_TESTME_FILES),$(BSG_TESTME_DIR)/$(x))       \
-              $(TEST_MAIN)
+              $(PWD)/$(TEST_MAIN)
 
 # function that generates a string for each combination of the parameters;
 # spaces separated by "@" signs.
@@ -60,7 +59,6 @@ bsg_param_scan = $(if $(1),$(foreach v__,$($(firstword $(1))),\
 # combination of the parameters
 commands = $(call bsg_param_scan,$(scan_params),$(BSG_IP_CORES_SIM_DEFINE_PARAM),=)
 
-$(warning bsg_param_scan: $(commands))
 
 # default rule: run all of the targets.
 all: clean $(foreach x,$(commands),run.$(x))
@@ -70,10 +68,21 @@ all: clean $(foreach x,$(commands),run.$(x))
 # command line options
 
 run.%:
-	$(BSG_IP_CORES_COMP) $(subst @, ,$*) $(BSG_IP_CORES_SIM_INCLUDE_DIRS) $(ALL_FILES)
-	$(BSG_IP_CORES_ELAB) $(TEST_MODULE)
-	$(BSG_IP_CORES_SIM) | /usr/bin/tee outfile
-  
+	rm -rf obj_dir
+	rm -f ./rtl_sv.include
+	$(foreach f,$(ALL_FILES),echo $(f) >> ./rtl_sv.include;)
+	verilator  --trace --coverage --assert --prof-cfuncs  --build  --exe \
+	-I$(TOP)/bsg_test -I$(TOP)/bsg_misc -I$(TOP)/bsg_dataflow  -I$(TOP)/bsg_noc -f ./rtl_sv.include \
+	--top-module  $(TEST_MODULE) --timescale "1ps/1ps"  \
+	--main --timing  -Wno-lint -Wno-MULTITOP -Wno-MULTIDRIVEN  -Wno-UNOPTFLAT  -Wno-WIDTHCONCAT -Wno-REDEFMACRO\
+    $(subst @, ,$*)
+	@executable=$$(find ./obj_dir -maxdepth 1 -type f -perm /u+x | head -n 1); \
+    if [ -n "$$executable" ]; then \
+        $$executable; \
+    else \
+        echo "No executable found in ./obj_dir"; \
+    fi
+	verilator_coverage --annotate ./annotate --annotate-min 1 coverage.dat
 clean:
 	@echo removing outfile
 	rm -f outfile output.log
