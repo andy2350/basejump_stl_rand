@@ -1,9 +1,9 @@
-/*verilator coverage_off*/
+
 //
 // Paul Gao 06/2019
 //
 //
-
+/*verilator coverage_off*/
 `timescale 1ps/1ps
 `include "bsg_noc_links.svh"
 
@@ -58,7 +58,7 @@ module bsg_wormhole_router_tester
   // Hold on valid sets the arbitration policy such that once an output tag is selected, it
   // remains selected until it is acked, then the round-robin scheduler continues cycling
   // from the selected tag.
-  ,parameter hold_on_valid_p = 0
+  ,parameter hold_on_valid_p = 1
   )
   
   ();
@@ -198,6 +198,8 @@ module bsg_wormhole_router_tester
   // Simulation of Clock
   always #3 clk    = ~clk;
   always #4 mc_clk = ~mc_clk;
+
+  integer rand_x, rand_y;
   
   initial 
   begin
@@ -358,6 +360,24 @@ module bsg_wormhole_router_tester
             $finish;
           end
       end
+
+
+    repeat (10) begin
+      
+
+      $display("Generated random coordinates: x = %d, y = %d", rand_x, rand_y);
+
+      for (k = 0; k < dirs_p; k++) begin
+        for (j = 0; j < dirs_p; j++) begin
+          rand_x = $urandom % 3 + 1; // Generate a random number between 1 and 3 for x
+          rand_y = $urandom % 3 + 1; // Generate a random number between 1 and 3 for y
+          // Use random values for my_cord_full and dest_cord_full
+          dest_cord_full[k] = rand_x;
+          dest_cord_full[j] = rand_y;
+        end
+        #500;
+      end
+    end
     
     $display("\nPASS!\n");
     
@@ -365,6 +385,7 @@ module bsg_wormhole_router_tester
       begin
         $display("Loopback node %d sent and received %d packets\n", j, sent[j]);
       end
+    
     
     $finish;
     
