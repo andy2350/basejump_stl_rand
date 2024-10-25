@@ -1,14 +1,12 @@
-TOP ?= $(shell git rev-parse --show-toplevel)
-BSG_CADENV_DIR ?= $(TOP)/../bsg_cadenv
 
-include $(BSG_CADENV_DIR)/cadenv.mk
+export BASEJUMP_STL_DIR = $(abspath ../../..)
 
 run:
-	vcs -f sv.include +incdir+$(TOP)/bsg_misc +v2k -R +lint=all -sverilog -full64 \
-		-debug_pp -timescale=1ns/10ps -l sim.log
+	verilator   --cc  --trace --coverage --assert --prof-cfuncs  --build  --exe\
+		-I$(BASEJUMP_STL_DIR)/bsg_misc -f sv.include \
+		 --top-module  testbench \
+		--main --timing  -Wno-lint -Wno-MULTITOP -Wno-MULTIDRIVEN  -Wno-UNOPTFLAT  -Wno-WIDTHCONCAT
 
-dve:
-	dve -full64 -vpd vcdplus.vpd &
 
 clean:
 	rm -r -f DVEfiles
@@ -18,3 +16,4 @@ clean:
 	rm -r -f simv.daidir 
 	rm -f ucli.key
 	rm -f vcdplus.vpd
+	rm -rf obj_dir
