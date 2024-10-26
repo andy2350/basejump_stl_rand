@@ -16,7 +16,7 @@ $(FPU_TRACE_ROM).v: $(FPU_TRACE_ROM).tr
 rtl_sim: $(FPU_TRACE_ROM).v
 	verilator   --cc  --trace --coverage --assert --prof-cfuncs  --build  --exe\
 		$(INCDIR) -f rtl_sv.include \
-		 --top-module  testbench --timescale "" \
+		 --top-module  testbench\
 		--main --timing  -Wno-lint -Wno-MULTITOP -Wno-MULTIDRIVEN  -Wno-UNOPTFLAT  -Wno-WIDTHCONCAT
 
 
