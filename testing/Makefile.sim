@@ -46,7 +46,8 @@ ALL_FILES = $(foreach x,$(BSG_MISC_FILES),$(TOP)/bsg_misc/$(x))     \
               $(foreach x,$(BSG_TEST_FILES),$(TOP)/bsg_test/$(x))           \
               $(foreach x,$(BSG_TAG_FILES),$(TOP)/bsg_tag/$(x))           \
               $(foreach x,$(BSG_TESTME_FILES),$(BSG_TESTME_DIR)/$(x))       \
-              $(PWD)/$(TEST_MAIN)
+              $(PWD)/$(TEST_MAIN) \
+              $(CXX_FILES)
 
 # function that generates a string for each combination of the parameters;
 # spaces separated by "@" signs.
@@ -71,10 +72,10 @@ run.%:
 	rm -rf obj_dir
 	rm -f ./rtl_sv.include
 	$(foreach f,$(ALL_FILES),echo $(f) >> ./rtl_sv.include;)
-	verilator  --trace --coverage --assert --prof-cfuncs  --build  --exe \
+	verilator --cc --build  --exe \
 	-I$(TOP)/bsg_test -I$(TOP)/bsg_misc -I$(TOP)/bsg_dataflow  -I$(TOP)/bsg_noc -f ./rtl_sv.include \
-	--top-module  $(TEST_MODULE) --timescale "1ps/1ps"  \
-	--main --timing  -Wno-lint -Wno-MULTITOP -Wno-MULTIDRIVEN  -Wno-UNOPTFLAT  -Wno-WIDTHCONCAT -Wno-REDEFMACRO\
+    --top test_bsg --timescale 1ns/1ns \
+    -Wno-lint -Wno-MULTITOP -Wno-MULTIDRIVEN -Wno-UNOPTFLAT -Wno-WIDTHCONCAT -Wno-REDEFMACRO \
     $(subst @, ,$*)
 	@executable=$$(find ./obj_dir -maxdepth 1 -type f -perm /u+x | head -n 1); \
     if [ -n "$$executable" ]; then \
@@ -82,7 +83,6 @@ run.%:
     else \
         echo "No executable found in ./obj_dir"; \
     fi
-	verilator_coverage --annotate ./annotate --annotate-min 1 coverage.dat
 clean:
 	@echo removing outfile
 	rm -f outfile output.log

@@ -1,6 +1,21 @@
 /*verilator coverage_off*/
+
 `define DATA_WIDTH_P 4
 `define MESH_EDGE_P  2 // tests a 2^(MESH_EDGE_P) x 2^(MESH_EDGE_P) mesh network
+
+// Need to reverse the field declaration of the C struct
+typedef struct packed {
+  bit valid;
+  int data;
+  int dest_y;
+  int dest_x;
+} Message;
+
+import "DPI-C" function void get_message(input int i, input int j, output bit[$bits(Message)-1:0] m);
+import "DPI-C" function void notify_on_receive(input int i, input int j, input bit [(`DATA_WIDTH_P)+(`MESH_EDGE_P)*2-1:0] rcv_data);
+import "DPI-C" function void check_consume(input int i, input int j, output bit yumi);
+import "DPI-C" function void notify_on_send(input int i, input int j);
+import "DPI-C" function void reset_fn();
 
 /************************** TEST RATIONALE *********************************
 * 1. STATE SPACE
@@ -32,16 +47,12 @@ module test_bsg
   parameter cycle_time_p = 20,
   parameter reset_cycles_lo_p=1,
   parameter reset_cycles_hi_p=5
+)(
+  input wire clk
 );
 
   // clock and reset generation
-  wire clk;
   wire reset;
-
-  bsg_nonsynth_clock_gen #(  .cycle_time_p(cycle_time_p)
-                          )  clock_gen
-                          (  .o(clk)
-                          );
     
   bsg_nonsynth_reset_gen #(  .num_clocks_p     (1)
                            , .reset_cycles_lo_p(reset_cycles_lo_p)
@@ -104,7 +115,7 @@ module test_bsg
                       ,.yumi_o (test_output_yumi[i])
 
                       ,.data_o (test_output_data[i])
-                      ,.valid_o(test_output_valid[i])
+                      ,.v_o(test_output_valid[i])
                       ,.ready_and_i(test_input_ready[i])
 
                       ,.my_x_i(x_cord_width_lp'(i%medge_lp))
@@ -248,102 +259,66 @@ module test_bsg
                          );
   end
 
-
-
-
   /**************************************************
-  * Test stimuli
+  * Test Stimuli
   ***************************************************/
-  
-  logic [msize_lp-1:0][x_cord_width_lp+y_cord_width_lp-1:0] count;
-  logic [msize_lp-1:0] finish_input; // if high, data input to mesh is finished
-  
-  for(i=0; i<msize_lp; i=i+1)
-  begin
-    assign test_input_ready[i][P] = 1'b1;
-    assign test_stim_data_in[i] = {(width_lp-x_cord_width_lp-x_cord_width_lp)'(i)
-                                  ,((x_cord_width_lp+y_cord_width_lp)'(i))^count[i]
-                                  };
-    assign test_stim_valid_in[i] = ~(finish_input[i]);
-    
-    always_ff @(posedge clk)
-    begin
-      if(reset)
-        begin
-          count[i] <= 0;
-          finish_input <= 1'b0;
-        end
-      else
-        begin
-          if(test_stim_ready_out[i])
-            count[i] <= count[i] + 1;
 
-          if(count[i] == msize_lp-1)
-            finish_input[i] <= 1'b1;
-        end
-    end
+  bit [$bits(Message)-1:0] msg_bits[medge_lp-1:0][medge_lp-1:0];
+  Message msg[medge_lp-1:0][medge_lp-1:0];
+
+  always_ff @(posedge clk)
+  begin
+    if (reset)
+      reset_fn();
   end
   
+  for(i=0; i<medge_lp; i=i+1)
+  begin
+    for(j=0;j<medge_lp; j=j+1)
+    begin
+      int coord = i * medge_lp + j;
+      assign msg[i][j] = Message'(msg_bits[i][j]);
+      assign test_input_ready[coord][P] = 1'b1;
+      assign test_stim_data_in[coord] = { msg[i][j].data[`DATA_WIDTH_P-1:0],
+                                      msg[i][j].dest_x[x_cord_width_lp-1:0], 
+                                      msg[i][j].dest_y[y_cord_width_lp-1:0]};
+      assign test_stim_valid_in[coord] = 1'(msg[i][j].valid);
 
+      always_ff @(posedge clk)
+      begin
+        if (reset)
+        begin
+            msg_bits[i][j] = 0;
+        end
+        else
+        begin
+            // Note the order of notify_on_send() and get_message()
+            // Since I cannot make verilator to put notify_on_send() to the end of a cycle
+            get_message(i, j, msg_bits[i][j]);
+            if (test_stim_ready_out[coord]) 
+              notify_on_send(i, j);
+        end
+      end
+    end
+  end
 
   /**************************************************
   * Verification
   ***************************************************/
 
-  logic [msize_lp-1:0][x_cord_width_lp+y_cord_width_lp-1:0] output_count;
-  logic [msize_lp-1:0][width_lp-1:0] test_output_data_r;
-  logic [msize_lp-1:0] finish;
-
-  logic finish_r;
-  
-  for(i=0; i<msize_lp; i=i+1)
-    always_ff @(posedge clk)
-    begin
-      if(reset)
-        begin
-          output_count[i] <= 0;
-          finish[i] <= 1'b0;
-        end
-      else
-        if(test_output_valid[i][P] & (~finish[i]))
-          begin
-            $display(  "tile # %0d receiving packet: %b"
-                     , i
-                     , test_output_data[i][P]
-                    );
-            test_output_data_r <= test_output_data[i][P];
-            
-            assert(test_output_data[i][P][0+:(x_cord_width_lp+y_cord_width_lp)] == i)
-              else $error("received at tile: %0d, should go to tile: %0d"
-                          ,i
-                          ,test_output_data[i][P][0+:(x_cord_width_lp+y_cord_width_lp)]
-                         );
-
-            assert((test_output_data_r!=test_output_data[i][P]) | output_count[i]==0)
-              else $error("packet received at tile %d is not unique", i);
-
-            output_count[i] <= output_count[i] + 1;
-            
-            if(output_count[i] == msize_lp-1)
-              finish[i] <= 1'b1;
-          end
-    end
-
-  always_ff @(posedge clk)
+  for(i=0;i<medge_lp;i+=1)
   begin
-    if(reset)
-      finish_r <= 1'b0;
-    else
+    for(j=0;j<medge_lp;j+=1)
+    begin
+      int coord = i*medge_lp+j;
+      always_ff @(posedge clk)
       begin
-        if(&finish)
-          finish_r <= 1'b1;
-
-        if(finish_r)
-          begin
-            $display("============================================================");
-            $finish;
-          end
+        if(!reset & test_output_valid[coord][P])
+        begin
+          notify_on_receive(i, j, test_output_data[coord][P]);
+          check_consume(i, j, test_output_yumi[coord][P]);
+        end
       end
+    end
   end
-
 endmodule

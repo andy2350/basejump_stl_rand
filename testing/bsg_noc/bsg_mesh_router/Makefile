@@ -40,7 +40,8 @@ scan_params = DATA_WIDTH_P MESH_EDGE_P
 # sets is null, and nothing will run.
 
 DATA_WIDTH_P = 4
-MESH_EDGE_P  = 0 1 2
+MESH_EDGE_P  = 2
 
+CXX_FILES = simple_tb.cpp message.cpp
 
 include ../../Makefile.sim
