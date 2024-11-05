@@ -101,13 +101,17 @@ int main() {
     set_msg_gen((MessageGenerator*)&gen);
     auto dut = new Vtest_bsg;
 
-    while (!gen.is_finished()) {
+    int cnt = 0;
+    while (!gen.is_finished() && cnt < 100) {
         printf("New Cycle\n");
+        printf("===========Neg Edge============\n");
         dut->clk = 0;
         dut->eval();
+        printf("===========Pos Edge============\n");
         dut->clk = 1;
         dut->eval();
         gen.clk();
+        cnt += 1;
     }
 
     printf("FINISHED\n");

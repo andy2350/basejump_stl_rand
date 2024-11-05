@@ -88,11 +88,13 @@ module test_bsg
   logic [msize_lp-1:0][dirs_lp-1:0] test_input_ready;
   logic [msize_lp-1:0][dirs_lp-1:0][width_lp-1:0] test_input_data;
 
-  logic [msize_lp-1:0][dirs_lp-1:0] test_output_yumi;
+  logic [dirs_lp-1:0] test_output_yumi[msize_lp-1:0];
   logic [msize_lp-1:0][dirs_lp-1:0] test_output_valid;
   logic [msize_lp-1:0][dirs_lp-1:0][width_lp-1:0] test_output_data;
-
   
+  logic [width_lp-1:0] proc_output_data [msize_lp-1:0];
+  logic proc_output_valid[msize_lp-1:0];
+  logic proc_output_yumi[msize_lp-1:0];
   
   /*******************************************************
   * Instantiation of medge_lp x medge_lp mesh network
@@ -257,6 +259,22 @@ module test_bsg
                           ,.v_o   (test_input_valid[i][P])
                           ,.yumi_i(test_output_yumi[i][P])
                          );
+
+    bsg_fifo_1r1w_small #( .width_p(width_lp)
+                          ,.els_p  (msize_lp)
+                          ,.ready_THEN_valid_p(0)
+                         ) fifo_proc_out
+                         ( .clk_i  (clk)
+                          ,.reset_i(reset)
+                          
+                          ,.data_i (test_output_data[i][P])
+                          ,.v_i    (test_output_valid[i][P])
+                          ,.ready_param_o(test_input_ready[i][P])
+
+                          ,.data_o(proc_output_data[i])
+                          ,.v_o   (proc_output_valid[i])
+                          ,.yumi_i(proc_output_yumi[i])
+                         );
   end
 
   /**************************************************
@@ -278,7 +296,7 @@ module test_bsg
     begin
       int coord = i * medge_lp + j;
       assign msg[i][j] = Message'(msg_bits[i][j]);
-      assign test_input_ready[coord][P] = 1'b1;
+      // assign test_input_ready[coord][P] = 1'b1;
       assign test_stim_data_in[coord] = { msg[i][j].data[`DATA_WIDTH_P-1:0],
                                       msg[i][j].dest_x[x_cord_width_lp-1:0], 
                                       msg[i][j].dest_y[y_cord_width_lp-1:0]};
@@ -311,12 +329,23 @@ module test_bsg
     for(j=0;j<medge_lp;j+=1)
     begin
       int coord = i*medge_lp+j;
+      // assign proc_output_yumi[coord] = proc_output_valid[coord];
+      always_comb 
+      begin
+        if (!reset && proc_output_valid[coord])
+          check_consume(i, j, proc_output_yumi[coord]);
+        else
+          proc_output_yumi[coord] = 1'b0;
+      end
+
+      // Note: The proc_output_data comes in the next cycle after check_consume returns 1
+      // because of the scheduling of verilator 
+      // `notify_on_receive` should actually be named as `receive`
       always_ff @(posedge clk)
       begin
-        if(!reset & test_output_valid[coord][P])
+        if(!reset & proc_output_valid[coord])
         begin
-          notify_on_receive(i, j, test_output_data[coord][P]);
-          check_consume(i, j, test_output_yumi[coord][P]);
+          notify_on_receive(i, j, proc_output_data[coord]);
         end
       end
     end
