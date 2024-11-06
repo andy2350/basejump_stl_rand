@@ -42,6 +42,16 @@ scan_params = DATA_WIDTH_P MESH_EDGE_P
 DATA_WIDTH_P = 4
 MESH_EDGE_P  = 2
 
-CXX_FILES = simple_tb.cpp message.cpp
+SndDestFn_CFG ?= 2
+SndFreqFn_CFG ?= 1
+RcvFreqFn_CFG ?= 1
 
+CXX_FILES = message.cpp testbench.cpp
+
+CXX_DEFS = -DSndDestFn_CFG=$(SndDestFn_CFG) -DSndFreqFn_CFG=$(SndFreqFn_CFG) \
+           -DRcvFreqFn_CFG=$(RcvFreqFn_CFG)
+           
+VL_DEF_FLAGS = $(foreach x, $(CXX_DEFS),-CFLAGS $(x))
+
+$(info $(VL_DEF_FLAGS))
 include ../../Makefile.sim

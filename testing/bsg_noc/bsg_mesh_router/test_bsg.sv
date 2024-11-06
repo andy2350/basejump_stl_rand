@@ -312,9 +312,13 @@ module test_bsg
         begin
             // Note the order of notify_on_send() and get_message()
             // Since I cannot make verilator to put notify_on_send() to the end of a cycle
-            get_message(i, j, msg_bits[i][j]);
-            if (test_stim_ready_out[coord]) 
+            if (!reset && test_stim_valid_in[coord] && test_stim_ready_out[coord])
+            begin
+              // $display("GOOD");
               notify_on_send(i, j);
+            end
+            get_message(i, j, msg_bits[i][j]);
+            // $display("%b", msg_bits[i][j]);
         end
       end
     end
