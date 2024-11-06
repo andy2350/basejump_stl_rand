@@ -39,19 +39,25 @@ scan_params = DATA_WIDTH_P MESH_EDGE_P
 # note; if you leave out values for a variable, then the product of the
 # sets is null, and nothing will run.
 
-DATA_WIDTH_P = 4
-MESH_EDGE_P  = 2
+DATA_WIDTH_P = 6
+MESH_EDGE_P  = 3
+FIFO_SIZE_P = 4
 
-SndDestFn_CFG ?= 2
+SndDestFn_CFG ?= 0
 SndFreqFn_CFG ?= 1
 RcvFreqFn_CFG ?= 1
 
 CXX_FILES = message.cpp testbench.cpp
 
 CXX_DEFS = -DSndDestFn_CFG=$(SndDestFn_CFG) -DSndFreqFn_CFG=$(SndFreqFn_CFG) \
-           -DRcvFreqFn_CFG=$(RcvFreqFn_CFG)
-           
+           -DRcvFreqFn_CFG=$(RcvFreqFn_CFG) -DEDGE_LP=$(MESH_EDGE_P) \
+           -DDATA_LP=$(DATA_WIDTH_P)
+
+SV_DEFS = DATA_WIDTH_P=$(DATA_WIDTH_P) MESH_EDGE_P=$(MESH_EDGE_P) FIFO_SIZE_P=$(FIFO_SIZE_P)
+
 VL_DEF_FLAGS = $(foreach x, $(CXX_DEFS),-CFLAGS $(x))
+VL_SV_FLAGS = $(foreach x, $(SV_DEFS),+define+$(x))
 
 $(info $(VL_DEF_FLAGS))
+$(info $(VL_SV_FLAGS))
 include ../../Makefile.sim

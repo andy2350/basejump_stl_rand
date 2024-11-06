@@ -1,7 +1,7 @@
 /*verilator coverage_off*/
 
-`define DATA_WIDTH_P 4
-`define MESH_EDGE_P  2 // tests a 2^(MESH_EDGE_P) x 2^(MESH_EDGE_P) mesh network
+//`define DATA_WIDTH_P 4
+//`define MESH_EDGE_P  2 // tests a 2^(MESH_EDGE_P) x 2^(MESH_EDGE_P) mesh network
 
 // Need to reverse the field declaration of the C struct
 typedef struct packed {
@@ -162,7 +162,7 @@ module test_bsg
   for(i=0; i<((medge_lp)*(medge_lp-1)); i=i+1)
   begin
     bsg_fifo_1r1w_small #( .width_p(width_lp)
-                          ,.els_p  (msize_lp)
+                          ,.els_p  (`FIFO_SIZE_P)
                           ,.ready_THEN_valid_p(0)
                          ) fifo_up // north to south data flow
                          ( .clk_i  (clk)
@@ -178,7 +178,7 @@ module test_bsg
                          );
 
     bsg_fifo_1r1w_small #( .width_p(width_lp)
-                          ,.els_p  (msize_lp)
+                          ,.els_p  (`FIFO_SIZE_P)
                           ,.ready_THEN_valid_p(0)
                          ) fifo_down // south to north data flow
                          ( .clk_i  (clk)
@@ -200,7 +200,7 @@ module test_bsg
     for(j=0; j<medge_lp-1; j=j+1)
     begin
       bsg_fifo_1r1w_small #( .width_p(width_lp)
-                            ,.els_p  (msize_lp)
+                            ,.els_p  (`FIFO_SIZE_P)
                             ,.ready_THEN_valid_p(0)
                            ) fifo_right // west to east data flow
                            ( .clk_i  (clk)
@@ -216,7 +216,7 @@ module test_bsg
                            );
   
       bsg_fifo_1r1w_small #( .width_p(width_lp)
-                            ,.els_p  (msize_lp)
+                            ,.els_p  (`FIFO_SIZE_P)
                             ,.ready_THEN_valid_p(0)
                            ) fifo_left // east to west data flow
                            ( .clk_i  (clk)
@@ -245,7 +245,7 @@ module test_bsg
   for(i=0; i<msize_lp; i=i+1)
   begin
     bsg_fifo_1r1w_small #( .width_p(width_lp)
-                          ,.els_p  (msize_lp)
+                          ,.els_p  (`FIFO_SIZE_P)
                           ,.ready_THEN_valid_p(0)
                          ) fifo_proc_in
                          ( .clk_i  (clk)
@@ -261,7 +261,7 @@ module test_bsg
                          );
 
     bsg_fifo_1r1w_small #( .width_p(width_lp)
-                          ,.els_p  (msize_lp)
+                          ,.els_p  (`FIFO_SIZE_P)
                           ,.ready_THEN_valid_p(0)
                          ) fifo_proc_out
                          ( .clk_i  (clk)

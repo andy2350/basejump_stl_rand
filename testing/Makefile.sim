@@ -74,7 +74,7 @@ run.%:
 	$(foreach f,$(ALL_FILES),echo $(f) >> ./rtl_sv.include;)
 	verilator --cc --build  --exe \
 	-I$(TOP)/bsg_test -I$(TOP)/bsg_misc -I$(TOP)/bsg_dataflow  -I$(TOP)/bsg_noc -f ./rtl_sv.include \
-    --top test_bsg --timescale 1ns/1ns $(VL_DEF_FLAGS) \
+    --top test_bsg --timescale 1ns/1ns $(VL_DEF_FLAGS) $(VL_SV_FLAGS) \
     -Wno-lint -Wno-MULTITOP -Wno-MULTIDRIVEN -Wno-UNOPTFLAT -Wno-WIDTHCONCAT -Wno-REDEFMACRO \
     $(subst @, ,$*)
 	@executable=$$(find ./obj_dir -maxdepth 1 -type f -perm /u+x | head -n 1); \
