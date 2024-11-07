@@ -1,7 +1,7 @@
 #pragma once 
 
 #ifndef TOTAL_CYCLES
-#define TOTAL_CYCLES 100
+#define TOTAL_CYCLES 100000
 #endif
 
 #ifndef EDGE_LP

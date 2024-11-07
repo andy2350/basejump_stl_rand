@@ -72,17 +72,12 @@ run.%:
 	rm -rf obj_dir
 	rm -f ./rtl_sv.include
 	$(foreach f,$(ALL_FILES),echo $(f) >> ./rtl_sv.include;)
-	verilator --cc --build  --exe \
+	verilator --cc --build  --exe --coverage-toggle \
 	-I$(TOP)/bsg_test -I$(TOP)/bsg_misc -I$(TOP)/bsg_dataflow  -I$(TOP)/bsg_noc -f ./rtl_sv.include \
     --top test_bsg --timescale 1ns/1ns $(VL_DEF_FLAGS) $(VL_SV_FLAGS) \
     -Wno-lint -Wno-MULTITOP -Wno-MULTIDRIVEN -Wno-UNOPTFLAT -Wno-WIDTHCONCAT -Wno-REDEFMACRO \
     $(subst @, ,$*)
-	@executable=$$(find ./obj_dir -maxdepth 1 -type f -perm /u+x | head -n 1); \
-    if [ -n "$$executable" ]; then \
-        $$executable; \
-    else \
-        echo "No executable found in ./obj_dir"; \
-    fi
+
 clean:
 	@echo removing outfile
 	rm -f outfile output.log

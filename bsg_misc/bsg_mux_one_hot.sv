@@ -18,6 +18,9 @@ module bsg_mux_one_hot #(parameter `BSG_INV_PARAM(width_p)
    for (i = 0; i < els_p; i++)
      begin : mask
         assign data_masked[i] = data_i[i] & { width_p { sel_one_hot_i[i] } };
+        always begin
+          submit_cov_s(0,sel_one_hot_i[i],"sel_one_hot");
+        end
      end
 
    for (i = 0; i < width_p; i++)
