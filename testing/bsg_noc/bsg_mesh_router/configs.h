@@ -60,7 +60,7 @@
 #endif
 
 #ifndef SndDestFn_BLK
-#define SndDestFn_BLK 3
+#define SndDestFn_BLK 2
 #endif
 
 #if SndDestFn_CFG == 0
